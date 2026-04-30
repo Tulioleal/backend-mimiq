@@ -22,7 +22,7 @@ from services import AppServices
 from services.auth import AuthService
 from services.generation_service import GenerationService
 from services.tts_runtime_state import TTSRuntimeStateService
-from services.voice_service import VoiceService
+from services.voice_service import VoiceCandidateService, VoiceService
 
 
 class FakeStorageService:
@@ -151,6 +151,7 @@ def build_test_services(settings: Settings, http_client: AsyncClient) -> AppServ
         gpu=gpu,
         tts_runtime_state=TTSRuntimeStateService(),
         voices=VoiceService(),
+        voice_candidates=VoiceCandidateService(),
         generations=GenerationService(),
         tts_proxy=FakeTTSProxyService(gpu),
     )

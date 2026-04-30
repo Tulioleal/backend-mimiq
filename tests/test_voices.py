@@ -75,3 +75,83 @@ def test_create_voice_allows_failed_health_report(client) -> None:
     listing = client.get("/api/voices")
     assert listing.status_code == 200
     assert len(listing.json()) == 1
+
+
+def test_analyze_creates_pending_candidate_with_failed_health_report(client) -> None:
+    login = client.post("/api/auth/login", json={"adminKey": "test-admin-key"})
+    assert login.status_code == 200
+
+    client.app.state.services.audio_health = FailingAudioHealthAnalyzer()
+
+    analyze = client.post(
+        "/api/voices/analyze",
+        data={"name": "Candidate sample"},
+        files={"audio": ("voice.ogg", b"fake-clipped-audio-bytes", "audio/ogg")},
+    )
+
+    assert analyze.status_code == 200
+    payload = analyze.json()
+    assert payload["passed"] is False
+    assert payload["issues"][0]["code"] == "clipping_detected"
+    assert payload["candidate"]["name"] == "Candidate sample"
+    assert payload["candidate"]["status"] == "pending"
+
+    listing = client.get("/api/voices")
+    assert listing.status_code == 200
+    assert listing.json() == []
+
+
+def test_confirm_candidate_creates_voice(client) -> None:
+    login = client.post("/api/auth/login", json={"adminKey": "test-admin-key"})
+    assert login.status_code == 200
+
+    client.app.state.services.audio_health = FailingAudioHealthAnalyzer()
+    analyze = client.post(
+        "/api/voices/analyze",
+        data={"name": "Candidate sample"},
+        files={"audio": ("voice.ogg", b"fake-clipped-audio-bytes", "audio/ogg")},
+    )
+    assert analyze.status_code == 200
+    candidate_id = analyze.json()["candidate"]["id"]
+
+    confirm = client.post(f"/api/voices/candidates/{candidate_id}/confirm")
+
+    assert confirm.status_code == 200
+    payload = confirm.json()
+    assert payload["name"] == "Candidate sample"
+    assert payload["health_report"]["passed"] is False
+    assert payload["health_report"]["issues"][0]["code"] == "clipping_detected"
+
+    listing = client.get("/api/voices")
+    assert listing.status_code == 200
+    assert len(listing.json()) == 1
+    assert listing.json()[0]["id"] == payload["id"]
+
+
+def test_discard_candidate_does_not_create_voice(client) -> None:
+    login = client.post("/api/auth/login", json={"adminKey": "test-admin-key"})
+    assert login.status_code == 200
+
+    analyze = client.post(
+        "/api/voices/analyze",
+        data={"name": "Discard sample"},
+        files={"audio": ("voice.wav", b"fake-audio-bytes", "audio/wav")},
+    )
+    assert analyze.status_code == 200
+    candidate_id = analyze.json()["candidate"]["id"]
+
+    discard = client.delete(f"/api/voices/candidates/{candidate_id}")
+
+    assert discard.status_code == 204
+    listing = client.get("/api/voices")
+    assert listing.status_code == 200
+    assert listing.json() == []
+
+
+def test_confirm_missing_candidate_returns_404(client) -> None:
+    login = client.post("/api/auth/login", json={"adminKey": "test-admin-key"})
+    assert login.status_code == 200
+
+    confirm = client.post("/api/voices/candidates/missing/confirm")
+
+    assert confirm.status_code == 404

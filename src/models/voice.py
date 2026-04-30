@@ -33,5 +33,20 @@ class VoiceRead(BaseModel):
     created_at: datetime
 
 
+class VoiceCandidateRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    name: str
+    duration: float
+    status: str
+    created_at: datetime
+    expires_at: datetime
+
+
+class VoiceCandidateAnalyzeResponse(AudioHealthReport):
+    candidate: VoiceCandidateRead
+
+
 class VoiceCreateResponse(VoiceRead):
     health_report: AudioHealthReport

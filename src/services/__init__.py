@@ -14,7 +14,7 @@ from services.llm import LLMPreprocessor
 from services.storage import StorageService
 from services.tts_runtime_state import TTSRuntimeStateService
 from services.tts_proxy import TTSProxyService
-from services.voice_service import VoiceService
+from services.voice_service import VoiceCandidateService, VoiceService
 
 
 @dataclass(slots=True)
@@ -26,6 +26,7 @@ class AppServices:
     gpu: GPUOrchestrator
     tts_runtime_state: TTSRuntimeStateService
     voices: VoiceService
+    voice_candidates: VoiceCandidateService
     generations: GenerationService
     tts_proxy: TTSProxyService
 
@@ -38,6 +39,7 @@ def build_services(settings: Settings, http_client: AsyncClient) -> AppServices:
     tts_runtime_state = TTSRuntimeStateService()
     gpu = GPUOrchestrator(settings, http_client, tts_runtime_state, github_actions)
     voices = VoiceService()
+    voice_candidates = VoiceCandidateService()
     generations = GenerationService()
     return AppServices(
         auth=auth,
@@ -47,6 +49,7 @@ def build_services(settings: Settings, http_client: AsyncClient) -> AppServices:
         gpu=gpu,
         tts_runtime_state=tts_runtime_state,
         voices=voices,
+        voice_candidates=voice_candidates,
         generations=generations,
         tts_proxy=TTSProxyService(settings, llm, storage, gpu, voices, generations),
     )

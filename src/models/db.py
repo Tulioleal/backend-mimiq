@@ -27,6 +27,24 @@ class Voice(Base):
     )
 
 
+class VoiceCandidate(Base):
+    __tablename__ = "voice_candidates"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    duration: Mapped[float] = mapped_column(Float, nullable=False)
+    gcs_path: Mapped[str] = mapped_column(String(1024), nullable=False, unique=True)
+    health_report: Mapped[dict] = mapped_column(JSON, nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+    confirmed_voice_id: Mapped[str | None] = mapped_column(
+        ForeignKey("voices.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
 class Generation(Base):
     __tablename__ = "generations"
 
