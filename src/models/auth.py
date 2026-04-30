@@ -11,3 +11,8 @@ class LoginRequest(BaseModel):
 
 class SessionResponse(BaseModel):
     authenticated: bool
+
+
+class WebSocketTicketResponse(BaseModel):
+    ticket: str
+    expires_in_seconds: int = Field(alias="expiresInSeconds")

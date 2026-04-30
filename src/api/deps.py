@@ -48,6 +48,10 @@ async def require_internal_key(
 async def require_admin_websocket(websocket: WebSocket) -> str:
     settings = websocket.app.state.settings
     services = websocket.app.state.services
+    ticket = websocket.query_params.get("ticket")
+    if services.auth.consume_ws_ticket(ticket):
+        return "ws-ticket"
+
     candidate = websocket.cookies.get(settings.cookie_name) or websocket.headers.get("X-Admin-Key")
     if not services.auth.is_authorized(candidate):
         raise WebSocketException(

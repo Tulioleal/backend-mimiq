@@ -6,7 +6,7 @@ from fastapi import APIRouter, Body, Depends, Header, HTTPException, Request, st
 from fastapi.responses import JSONResponse
 
 from api.deps import require_admin
-from models.auth import LoginRequest, SessionResponse
+from models.auth import LoginRequest, SessionResponse, WebSocketTicketResponse
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -48,3 +48,10 @@ async def logout(request: Request, _: str = Depends(require_admin)) -> JSONRespo
 @router.get("/session", response_model=SessionResponse)
 async def session_status(_: str = Depends(require_admin)) -> SessionResponse:
     return SessionResponse(authenticated=True)
+
+
+@router.post("/ws-ticket", response_model=WebSocketTicketResponse)
+async def create_ws_ticket(request: Request, _: str = Depends(require_admin)) -> WebSocketTicketResponse:
+    ttl_seconds = 60
+    ticket = request.app.state.services.auth.issue_ws_ticket(ttl_seconds=ttl_seconds)
+    return WebSocketTicketResponse(ticket=ticket, expiresInSeconds=ttl_seconds)
