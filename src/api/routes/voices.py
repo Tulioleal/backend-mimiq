@@ -36,15 +36,6 @@ async def create_voice(
     session: AsyncSession = Depends(get_db_session),
 ) -> VoiceCreateResponse:
     audio_bytes, report = await request.app.state.services.audio_health.analyze_upload(audio)
-    if not report.passed:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail={
-                "message": "Audio health check failed.",
-                "report": report.model_dump(mode="json"),
-            },
-        )
-
     gcs_path = await request.app.state.services.storage.upload_sample(
         audio_bytes,
         audio.content_type,

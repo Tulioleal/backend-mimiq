@@ -26,3 +26,5 @@ dist/
 *.sqlite3
 
 .DS_Store
+*.ogg
+*.plan.*
