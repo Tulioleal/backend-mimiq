@@ -24,6 +24,21 @@ def test_runtime_state_service_persists_current_runtime(tmp_path) -> None:
         async with session_maker() as session:
             booting = await service.mark_booting(session, "waiting for registration")
             assert booting.status == GPUStatus.BOOTING.value
+            assert booting.registered_at is not None
+            boot_started_at = booting.registered_at
+
+        async with session_maker() as session:
+            refreshed = await service.set_state(
+                session,
+                GPUStatus.BOOTING,
+                instance_id=None,
+                endpoint=None,
+                detail="still waiting",
+                registered_at=boot_started_at,
+            )
+            assert refreshed.status == GPUStatus.BOOTING.value
+            assert refreshed.registered_at == boot_started_at
+            assert refreshed.updated_at >= boot_started_at
 
         async with session_maker() as session:
             ready = await service.mark_ready(session, "vast-123", "http://tts.test:8000")

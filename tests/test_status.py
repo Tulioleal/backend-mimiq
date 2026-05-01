@@ -27,3 +27,4 @@ def test_status_returns_ready_after_internal_registration(client) -> None:
 
     assert response.status_code == 200
     assert response.json()["status"] == "ready"
+

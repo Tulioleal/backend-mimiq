@@ -185,10 +185,11 @@ class GPUOrchestrator:
             )
             return
 
+        was_booting = self._state.status is GPUStatus.BOOTING
         self._state.status = GPUStatus.OFFLINE
         if self._state.endpoint:
             self._state.detail = "Registered TTS endpoint is unhealthy."
-        elif self._state.startup_requested_at:
+        elif self._state.startup_requested_at or was_booting:
             self._state.detail = "TTS startup timed out waiting for registration."
         else:
             self._state.detail = self._state.last_start_error or "No active GPU instance."
@@ -211,6 +212,10 @@ class GPUOrchestrator:
             return False
 
     def _boot_timed_out(self, startup_requested_at: datetime, now: datetime) -> bool:
+        if startup_requested_at.tzinfo is None:
+            startup_requested_at = startup_requested_at.replace(tzinfo=timezone.utc)
+        if now.tzinfo is None:
+            now = now.replace(tzinfo=timezone.utc)
         elapsed = (now - startup_requested_at).total_seconds()
         return elapsed >= self.settings.tts_boot_timeout_seconds
 
@@ -230,11 +235,7 @@ class GPUOrchestrator:
         self._state.status = GPUStatus(persisted_state.status)
         self._state.instance_id = persisted_state.instance_id
         self._state.endpoint = persisted_state.endpoint
-        self._state.startup_requested_at = (
-            persisted_state.updated_at
-            if persisted_state.status == GPUStatus.BOOTING.value
-            else persisted_state.registered_at
-        )
+        self._state.startup_requested_at = persisted_state.registered_at
         self._state.last_start_error = persisted_state.last_error
         self._state.detail = None if persisted_state.status == GPUStatus.READY.value else persisted_state.last_error
 

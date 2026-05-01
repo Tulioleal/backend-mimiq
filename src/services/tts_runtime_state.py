@@ -15,10 +15,12 @@ class TTSRuntimeStateService:
         return await session.get(TTSRuntimeState, self.CURRENT_ROW_ID)
 
     async def mark_booting(self, session: AsyncSession, detail: str | None = None) -> TTSRuntimeState:
+        now = self._now()
         state = await self._get_or_create(session)
         state.status = GPUStatus.BOOTING.value
         state.last_error = detail
-        state.updated_at = self._now()
+        state.registered_at = now
+        state.updated_at = now
         await session.commit()
         await session.refresh(state)
         return state
