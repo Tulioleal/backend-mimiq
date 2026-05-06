@@ -22,6 +22,7 @@ from services import AppServices
 from services.auth import AuthService
 from services.generation_service import GenerationService
 from services.tts_runtime_state import TTSRuntimeStateService
+from services.tts_worker import TTSWorkerService
 from services.voice_service import VoiceCandidateService, VoiceService
 
 
@@ -89,23 +90,25 @@ class FakeGPUOrchestrator:
         del session
         if self.status is GPUStatus.OFFLINE:
             self.status = GPUStatus.BOOTING
-            self.detail = "Start workflow dispatched. Waiting for TTS service registration."
+            self.detail = "Start workflow dispatched. Waiting for TTS worker connection."
             self.startup_dispatches += 1
         return await self.get_status()
 
-    async def get_streaming_endpoint(self, session=None) -> str:
-        del session
-        if self.status is not GPUStatus.READY or not self.endpoint:
-            raise RuntimeError("TTS endpoint is not ready")
-        return self.endpoint
-
-    async def register_tts_endpoint(self, session, endpoint: str, instance_id: str | None) -> GPUStatusRead:
+    async def mark_worker_connected(self, session, instance_id: str | None) -> GPUStatusRead:
         del session
         self.status = GPUStatus.READY
-        self.endpoint = endpoint
+        self.endpoint = None
         self.instance_id = instance_id
-        self.detail = "TTS service registered with backend."
+        self.detail = "TTS worker connected."
         return await self.get_status()
+
+    async def mark_worker_disconnected(
+        self,
+        session,
+        instance_id: str | None,
+        reason: str | None,
+    ) -> GPUStatusRead:
+        return await self.mark_offline(session, instance_id, reason or "TTS worker disconnected.")
 
     async def mark_offline(self, session, instance_id: str | None, reason: str | None) -> GPUStatusRead:
         del session
@@ -143,6 +146,7 @@ def build_test_services(settings: Settings, http_client: AsyncClient) -> AppServ
     del http_client
     storage = FakeStorageService()
     gpu = FakeGPUOrchestrator()
+    tts_worker = TTSWorkerService()
     return AppServices(
         auth=AuthService(settings),
         audio_health=FakeAudioHealthAnalyzer(),
@@ -154,6 +158,7 @@ def build_test_services(settings: Settings, http_client: AsyncClient) -> AppServ
         voice_candidates=VoiceCandidateService(),
         generations=GenerationService(),
         tts_proxy=FakeTTSProxyService(gpu),
+        tts_worker=tts_worker,
     )
 
 

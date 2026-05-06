@@ -14,17 +14,14 @@ def test_status_returns_gpu_state_for_authenticated_user(client) -> None:
     assert response.json()["status"] == "offline"
 
 
-def test_status_returns_ready_after_internal_registration(client) -> None:
+def test_status_returns_ready_while_worker_is_connected(client) -> None:
     client.post("/api/auth/login", json={"adminKey": "test-admin-key"})
-    ready = client.post(
-        "/internal/tts-ready",
-        json={"endpoint": "http://tts.test:8000", "instance_id": "vast-123"},
-        headers={"X-Internal-Key": "internal-test-secret"},
-    )
-    assert ready.status_code == 200
 
-    response = client.get("/api/status/gpu")
+    with client.websocket_connect(
+        "/internal/tts-worker/ws?instance_id=vast-123",
+        headers={"X-Internal-Key": "internal-test-secret"},
+    ):
+        response = client.get("/api/status/gpu")
 
     assert response.status_code == 200
     assert response.json()["status"] == "ready"
-

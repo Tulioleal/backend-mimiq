@@ -15,7 +15,6 @@ INSTALL_REQUIRES = [
     "soundfile>=0.12.1",
     "sqlalchemy>=2.0.30",
     "uvicorn[standard]>=0.30.1",
-    "websockets>=13.0",
 ]
 
 

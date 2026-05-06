@@ -59,3 +59,14 @@ async def require_admin_websocket(websocket: WebSocket) -> str:
             reason="Invalid admin key",
         )
     return candidate or ""
+
+
+async def require_internal_key_websocket(websocket: WebSocket) -> str:
+    settings = websocket.app.state.settings
+    candidate = websocket.query_params.get("token") or websocket.headers.get("X-Internal-Key")
+    if not settings.internal_secret or settings.internal_secret != candidate:
+        raise WebSocketException(
+            code=status.WS_1008_POLICY_VIOLATION,
+            reason="Invalid internal key",
+        )
+    return candidate or ""

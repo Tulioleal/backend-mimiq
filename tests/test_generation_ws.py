@@ -30,9 +30,9 @@ def test_generation_websocket_dispatches_startup_when_offline(client) -> None:
 
         assert status_message["type"] == "status"
         assert status_message["status"] == "booting"
-        assert "workflow dispatched" in status_message["detail"].lower()
+        assert "worker connection" in status_message["detail"].lower()
         assert error_message["type"] == "error"
-        assert "workflow dispatched" in error_message["message"].lower()
+        assert "worker connection" in error_message["message"].lower()
 
         try:
             websocket.receive_json()

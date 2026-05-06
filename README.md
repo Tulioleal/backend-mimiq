@@ -4,8 +4,8 @@ PVC (Private Voice Clone) is a self-hosted voice cloning platform built around X
 
 The project is split into three main parts:
 
-- `backend/`: FastAPI API layer on GCP for auth, voice storage, audio health checks, LLM preprocessing, and WebSocket proxying
-- `xtts-vm/`: XTTS service that runs on Vast.ai and registers itself back to the backend when ready
+- `backend/`: FastAPI API layer on GCP for auth, voice storage, audio health checks, LLM preprocessing, and TTS worker coordination
+- `xtts-vm/`: XTTS service that runs on Vast.ai and connects back to the backend as a worker
 - `infra/`: OpenTofu configuration for the GCP backend VM, Cloud SQL, networking, and storage buckets
 
 ## Architecture
@@ -16,9 +16,10 @@ The runtime flow is:
 2. The backend validates the session and rewrites the text through the configured LLM API
 3. If the TTS service is offline, the backend dispatches the `xtts-vm` GitHub Actions startup workflow
 4. GitHub Actions boots the Vast.ai instance and starts the XTTS service
-5. The XTTS service calls the backend internal readiness endpoint
-6. The backend opens a WebSocket connection to the TTS service and proxies audio chunks back to the client
-7. Generated audio is stored in GCS and recorded in PostgreSQL
+5. The XTTS service connects to the backend worker WebSocket
+6. The backend sends synthesize jobs over that socket and proxies streamed audio chunks back to the client
+7. The XTTS service uploads the completed WAV back to the backend
+8. Generated audio is stored in GCS and recorded in PostgreSQL
 
 ## Repository Layout
 
@@ -51,7 +52,7 @@ Recommended order:
 2. Configure and run the FastAPI backend in `backend/`
 3. Configure `xtts-vm/` GitHub Actions secrets and build the XTTS image
 4. Point the backend at the GitHub workflow used to start the XTTS service
-5. Trigger generation and verify the XTTS service registers back to the backend
+5. Trigger generation and verify the XTTS service connects back to the backend worker WebSocket
 
 ## 1. Infrastructure Setup
 
@@ -103,17 +104,13 @@ Important backend settings:
 - `GCS_SAMPLE_BUCKET`: bucket for uploaded voice samples
 - `GCS_OUTPUT_BUCKET`: bucket for generated outputs
 - `LLM_API_URL`: text rewrite endpoint
-- `INTERNAL_SECRET`: shared secret used by `xtts-vm` when calling backend internal endpoints
+- `INTERNAL_SECRET`: shared secret used by `xtts-vm` when connecting to backend internal endpoints
 - `BACKEND_PUBLIC_URL`: public URL the XTTS service can call back into
 - `GITHUB_TOKEN`: token used by backend to dispatch the XTTS startup workflow
 - `GITHUB_OWNER`: owner of the `xtts-vm` repository
 - `GITHUB_REPO`: repository name containing the workflow
 - `GITHUB_START_WORKFLOW`: workflow filename, for example `start-tts.yml`
 - `GITHUB_REF`: branch or tag to dispatch
-
-Optional local override:
-
-- `TTS_ENDPOINT`: bypass startup workflow dispatch and point backend directly at a running TTS service
 
 ### Install
 
@@ -151,8 +148,10 @@ The backend exposes:
 - `GET /api/status/gpu`
 - voice CRUD endpoints under `/api/voices`
 - generation history endpoints under `/api/generations`
-- WebSocket generation proxy at `/ws/generations/stream`
-- internal callbacks at `/internal/tts-ready` and `/internal/tts-offline`
+- WebSocket generation stream at `/ws/generations/stream`
+- internal worker WebSocket at `/internal/tts-worker/ws`
+- internal job files at `/internal/jobs/{job_id}/speaker.wav` and `/internal/jobs/{job_id}/result`
+- internal offline callback at `/internal/tts-offline`
 
 ### Run Backend Tests
 
@@ -179,9 +178,11 @@ At a minimum:
 - `BACKEND_URL`
 - `INTERNAL_SECRET`
 
-The startup workflow should boot the Vast.ai instance, start the XTTS service, and let the XTTS service call:
+The startup workflow should boot the Vast.ai instance, start the XTTS service, and let the XTTS service:
 
-- `POST /internal/tts-ready` when it is available
+- connect to `WS /internal/tts-worker/ws` when it is available
+- fetch `GET /internal/jobs/{job_id}/speaker.wav` for each synthesize job
+- upload `POST /internal/jobs/{job_id}/result` when a final WAV is ready
 - `POST /internal/tts-offline` when it shuts down or the watchdog terminates it
 
 ## 4. End-to-End Startup Flow
@@ -194,7 +195,7 @@ Once infrastructure and secrets are configured:
 4. Send a generation request through the backend WebSocket
 5. Backend dispatches the GitHub Actions startup workflow if compute is offline
 6. Wait for `booting` to transition to `ready`
-7. Retry generation once the XTTS service has registered itself
+7. Retry generation once the XTTS worker has connected
 
 ## Notes
 

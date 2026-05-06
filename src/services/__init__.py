@@ -14,6 +14,7 @@ from services.llm import LLMPreprocessor
 from services.storage import StorageService
 from services.tts_runtime_state import TTSRuntimeStateService
 from services.tts_proxy import TTSProxyService
+from services.tts_worker import TTSWorkerService
 from services.voice_service import VoiceCandidateService, VoiceService
 
 
@@ -29,6 +30,7 @@ class AppServices:
     voice_candidates: VoiceCandidateService
     generations: GenerationService
     tts_proxy: TTSProxyService
+    tts_worker: TTSWorkerService
 
 
 def build_services(settings: Settings, http_client: AsyncClient) -> AppServices:
@@ -41,6 +43,7 @@ def build_services(settings: Settings, http_client: AsyncClient) -> AppServices:
     voices = VoiceService()
     voice_candidates = VoiceCandidateService()
     generations = GenerationService()
+    tts_worker = TTSWorkerService()
     return AppServices(
         auth=auth,
         audio_health=AudioHealthAnalyzer(),
@@ -51,5 +54,6 @@ def build_services(settings: Settings, http_client: AsyncClient) -> AppServices:
         voices=voices,
         voice_candidates=voice_candidates,
         generations=generations,
-        tts_proxy=TTSProxyService(settings, llm, storage, gpu, voices, generations),
+        tts_proxy=TTSProxyService(settings, llm, storage, gpu, tts_worker, voices, generations),
+        tts_worker=tts_worker,
     )

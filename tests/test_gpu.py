@@ -47,7 +47,7 @@ def test_booting_status_times_out_from_original_start_time(tmp_path) -> None:
                     status=GPUStatus.BOOTING.value,
                     registered_at=now - timedelta(seconds=601),
                     updated_at=now,
-                    last_error="Start workflow dispatched. Waiting for TTS service registration.",
+                    last_error="Start workflow dispatched. Waiting for TTS worker connection.",
                 )
             )
             await session.commit()
@@ -61,7 +61,7 @@ def test_booting_status_times_out_from_original_start_time(tmp_path) -> None:
             status = await gpu.get_status(session)
 
         assert status.status == GPUStatus.OFFLINE
-        assert status.detail == "TTS startup timed out waiting for registration."
+        assert status.detail == "TTS startup timed out waiting for worker connection."
 
     asyncio.run(run())
 
@@ -79,7 +79,7 @@ def test_booting_status_stays_booting_before_timeout(tmp_path) -> None:
                     status=GPUStatus.BOOTING.value,
                     registered_at=now - timedelta(seconds=30),
                     updated_at=now,
-                    last_error="Start workflow dispatched. Waiting for TTS service registration.",
+                    last_error="Start workflow dispatched. Waiting for TTS worker connection.",
                 )
             )
             await session.commit()
@@ -93,6 +93,6 @@ def test_booting_status_stays_booting_before_timeout(tmp_path) -> None:
             status = await gpu.get_status(session)
 
         assert status.status == GPUStatus.BOOTING
-        assert status.detail == "Start workflow dispatched. Waiting for TTS service registration."
+        assert status.detail == "Start workflow dispatched. Waiting for TTS worker connection."
 
     asyncio.run(run())

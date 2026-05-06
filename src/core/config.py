@@ -55,9 +55,6 @@ class Settings(BaseSettings):
         alias="GITHUB_START_WORKFLOW_INPUTS_JSON",
     )
 
-    tts_endpoint: str | None = Field(default=None, alias="TTS_ENDPOINT")
-    tts_health_path: str = Field(default="/health", alias="TTS_HEALTH_PATH")
-    tts_ws_path: str = Field(default="/ws/generate", alias="TTS_WS_PATH")
     tts_boot_timeout_seconds: int = Field(default=600, alias="TTS_BOOT_TIMEOUT_SECONDS")
 
     backend_public_url: str | None = Field(default=None, alias="BACKEND_PUBLIC_URL")
