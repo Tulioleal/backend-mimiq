@@ -4,6 +4,7 @@ from httpx import AsyncClient, HTTPStatusError
 
 from core.config import Settings
 from core.exceptions import ConfigurationError
+from utils.get_ip import get_gce_external_ip
 
 
 class GitHubActionsService:
@@ -28,11 +29,19 @@ class GitHubActionsService:
                 "GitHub Actions startup is not configured. Set GITHUB_TOKEN, GITHUB_OWNER, "
                 "GITHUB_REPO, and GITHUB_START_WORKFLOW."
             )
+        
+        backend_ip = self.settings.backend_public_ip or get_gce_external_ip()
+        backend_url = self.settings.backend_url or f"http://{backend_ip}:8000"
+        backend_ws_url = self.settings.backend_ws_url or f"ws://{backend_ip}:8000/internal/tts-worker/ws"
 
-        payload: dict[str, object] = {"ref": self.settings.github_ref}
-        workflow_inputs = self.settings.github_start_workflow_inputs
-        if workflow_inputs:
-            payload["inputs"] = workflow_inputs
+        payload: dict[str, object] = {
+            "ref": self.settings.github_ref,
+            "inputs": {
+                **self.settings.github_start_workflow_inputs,
+                "backend_url": backend_url,
+                "backend_ws_url": backend_ws_url,
+            }
+        }
 
         response = await self.http_client.post(
             (

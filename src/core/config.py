@@ -50,8 +50,16 @@ class Settings(BaseSettings):
     github_ref: str = Field(default="main", alias="GITHUB_REF")
     github_api_url: str = Field(default="https://api.github.com", alias="GITHUB_API_URL")
     github_start_workflow: str | None = Field(default=None, alias="GITHUB_START_WORKFLOW")
+    
+    backend_public_ip: str | None = Field(default=None, alias="BACKEND_PUBLIC_IP")
+    backend_url: str | None = Field(default=None, alias="BACKEND_URL")
+    backend_ws_url: str | None = Field(default=None, alias="BACKEND_WS_URL")
+    
     github_start_workflow_inputs_json: str = Field(
-        default="{}",
+        default={
+        "backend_url": backend_url or "",
+        "backend_ws_url": backend_ws_url or "",
+        },
         alias="GITHUB_START_WORKFLOW_INPUTS_JSON",
     )
 
