@@ -37,7 +37,7 @@ class GitHubActionsService:
 
         backend_url = self.settings.backend_public_url
         backend_ws_url = self.settings.backend_ws_url
-        inputs = self.github_start_workflow_inputs_json
+        inputs = self.settings.github_start_workflow_inputs
         inputs["backend_url"] = backend_url
         inputs["backend_ws_url"] = backend_ws_url
 
