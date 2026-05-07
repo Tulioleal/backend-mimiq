@@ -42,6 +42,8 @@ class GitHubActionsService:
         inputs["backend_url"] = backend_url
         inputs["backend_ws_url"] = backend_ws_url
 
+        print(f"Dispatching GitHub Actions workflow with inputs: {inputs}")
+
         payload: dict[str, object] = {
             "ref": self.settings.github_ref,
             "inputs": inputs
