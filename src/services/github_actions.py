@@ -38,13 +38,13 @@ class GitHubActionsService:
         backend_url = self.settings.backend_public_url or f"http://{self.settings.backend_public_ip}:8000"
         backend_ws_url = self.settings.backend_ws_url or f"ws://{self.settings.backend_public_ip}:8000/internal/tts-worker/ws"
 
+        inputs = self.settings.github_start_workflow_inputs
+        inputs["backend_url"] = backend_url
+        inputs["backend_ws_url"] = backend_ws_url
+
         payload: dict[str, object] = {
             "ref": self.settings.github_ref,
-            "inputs": {
-                **self.settings.github_start_workflow_inputs,
-                "backend_url": backend_url,
-                "backend_ws_url": backend_ws_url,
-            },
+            "inputs": inputs
         }
 
         response = await self.http_client.post(
