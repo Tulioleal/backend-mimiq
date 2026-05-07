@@ -35,8 +35,8 @@ class GitHubActionsService:
                 "BACKEND_PUBLIC_URL must be set to dispatch the GitHub Actions workflow."
             )
 
-        backend_url = self.settings.backend_public_url
-        backend_ws_url = self.settings.backend_ws_url
+        backend_url = self.settings.backend_public_url or f"http://{self.settings.backend_public_ip}:8000"
+        backend_ws_url = self.settings.backend_ws_url or f"ws://{self.settings.backend_public_ip}:8000/internal/tts-worker/ws"
 
         payload: dict[str, object] = {
             "ref": self.settings.github_ref,
