@@ -56,10 +56,7 @@ class Settings(BaseSettings):
     backend_ws_url: str | None = Field(default=None, alias="BACKEND_WS_URL")
     
     github_start_workflow_inputs_json: str = Field(
-        default={
-        "backend_url": backend_url or "",
-        "backend_ws_url": backend_ws_url or "",
-        },
+        default="{}",
         alias="GITHUB_START_WORKFLOW_INPUTS_JSON",
     )
 
