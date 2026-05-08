@@ -31,16 +31,26 @@ class GitHubActionsService:
             )
 
         backend_url = self.settings.backend_url
-        if not backend_url:
+        backend_ws_url = self.settings.backend_ws_url
+        if not backend_url or not backend_ws_url:
             raise ConfigurationError(
-                "BACKEND_PUBLIC_URL must be set to dispatch the GitHub Actions workflow."
+                "BACKEND_PUBLIC_URL and BACKEND_WS_URL must be set to dispatch the GitHub Actions workflow."
             )
 
-        backend_url = self.settings.backend_url
-        backend_ws_url = self.settings.backend_ws_url
         inputs = self.settings.github_start_workflow_inputs
-        inputs["backend_url"] = backend_url
-        inputs["backend_ws_url"] = backend_ws_url
+
+        payload: dict[str, object] = {"ref": self.settings.github_ref}
+        workflow_inputs = self.settings.github_start_workflow_inputs
+
+        if workflow_inputs:
+            workflow_inputs["backend_url"] = backend_url
+            workflow_inputs["backend_ws_url"] = backend_ws_url
+            payload["inputs"] = workflow_inputs
+
+        payload: dict[str, object] = {
+            "ref": self.settings.github_ref,
+            "inputs": workflow_inputs
+        }
 
         container_env = {
             "BACKEND_URL": os.environ["BACKEND_URL"],
@@ -50,11 +60,6 @@ class GitHubActionsService:
         }
 
         print(f"Dispatching GitHub Actions workflow with inputs: {inputs, container_env}")
-
-        payload: dict[str, object] = {
-            "ref": self.settings.github_ref,
-            "inputs": inputs
-        }
 
         response = await self.http_client.post(
             (
