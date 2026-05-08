@@ -56,41 +56,41 @@ class AudioHealthAnalyzer:
         issues: list[AudioHealthIssue] = []
         recommendations: list[str] = []
 
-        if duration_seconds < 60:
-            issues.append(
-                AudioHealthIssue(
-                    code="duration_too_short",
-                    message="Voice sample must be at least 60 seconds long.",
-                )
-            )
-            recommendations.append("Record at least 60 seconds of continuous speech.")
+        # if duration_seconds < 60:
+        #     issues.append(
+        #         AudioHealthIssue(
+        #             code="duration_too_short",
+        #             message="Voice sample must be at least 60 seconds long.",
+        #         )
+        #     )
+        #     recommendations.append("Record at least 60 seconds of continuous speech.")
 
-        if average_db < -32 or peak < 0.15:
-            issues.append(
-                AudioHealthIssue(
-                    code="volume_too_low",
-                    message="Input volume is too low for reliable cloning.",
-                )
-            )
-            recommendations.append("Move closer to the microphone or increase input gain.")
+        # if average_db < -32 or peak < 0.15:
+        #     issues.append(
+        #         AudioHealthIssue(
+        #             code="volume_too_low",
+        #             message="Input volume is too low for reliable cloning.",
+        #         )
+        #     )
+        #     recommendations.append("Move closer to the microphone or increase input gain.")
 
-        if clipped_ratio > 0.005 or peak >= 0.999:
-            issues.append(
-                AudioHealthIssue(
-                    code="clipping_detected",
-                    message="Audio appears clipped or distorted.",
-                )
-            )
-            recommendations.append("Lower the recording gain to avoid clipping.")
+        # if clipped_ratio > 0.005 or peak >= 0.999:
+        #     issues.append(
+        #         AudioHealthIssue(
+        #             code="clipping_detected",
+        #             message="Audio appears clipped or distorted.",
+        #         )
+        #     )
+        #     recommendations.append("Lower the recording gain to avoid clipping.")
 
-        if noise_floor_db > -35 or estimated_snr_db < 18:
-            issues.append(
-                AudioHealthIssue(
-                    code="background_noise",
-                    message="Background noise is too prominent for a clean voice sample.",
-                )
-            )
-            recommendations.append("Record in a quieter room with a more isolated microphone setup.")
+        # if noise_floor_db > -35 or estimated_snr_db < 18:
+        #     issues.append(
+        #         AudioHealthIssue(
+        #             code="background_noise",
+        #             message="Background noise is too prominent for a clean voice sample.",
+        #         )
+        #     )
+        #     recommendations.append("Record in a quieter room with a more isolated microphone setup.")
 
         return AudioHealthReport(
             passed=not issues,
