@@ -52,14 +52,7 @@ class GitHubActionsService:
             "inputs": workflow_inputs
         }
 
-        container_env = {
-            "BACKEND_URL": os.environ["BACKEND_URL"],
-            "BACKEND_WS_URL": os.environ["BACKEND_WS_URL"],
-            "INTERNAL_SECRET": os.environ["INTERNAL_SECRET"],
-            "VAST_API_KEY": os.environ["VAST_API_KEY"],
-        }
-
-        print(f"Dispatching GitHub Actions workflow with inputs: {inputs, container_env}")
+        print(f"Dispatching GitHub Actions workflow with inputs: {inputs}")
 
         response = await self.http_client.post(
             (
