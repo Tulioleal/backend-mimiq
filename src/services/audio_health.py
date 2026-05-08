@@ -92,7 +92,7 @@ class AudioHealthAnalyzer:
         #     )
         #     recommendations.append("Record in a quieter room with a more isolated microphone setup.")
 
-        return AudioHealthReport(
+        res = AudioHealthReport(
             passed=not issues,
             duration_seconds=round(duration_seconds, 2),
             average_db=round(average_db, 2),
@@ -103,3 +103,5 @@ class AudioHealthAnalyzer:
             issues=issues,
             recommendations=recommendations,
         )
+
+        return res
