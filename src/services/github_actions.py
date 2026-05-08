@@ -37,8 +37,6 @@ class GitHubActionsService:
                 "BACKEND_PUBLIC_URL and BACKEND_WS_URL must be set to dispatch the GitHub Actions workflow."
             )
 
-        inputs = self.settings.github_start_workflow_inputs
-
         payload: dict[str, object] = {"ref": self.settings.github_ref}
         workflow_inputs = self.settings.github_start_workflow_inputs
 
@@ -52,7 +50,7 @@ class GitHubActionsService:
             "inputs": workflow_inputs
         }
 
-        print(f"Dispatching GitHub Actions workflow with inputs: {inputs}")
+        print(f"Dispatching GitHub Actions workflow with inputs: {workflow_inputs}")
 
         response = await self.http_client.post(
             (
