@@ -40,14 +40,17 @@ class GitHubActionsService:
         payload: dict[str, object] = {"ref": self.settings.github_ref}
         workflow_inputs = self.settings.github_start_workflow_inputs
 
-        if workflow_inputs:
-            workflow_inputs["backend_url"] = backend_url
-            workflow_inputs["backend_ws_url"] = backend_ws_url
-            payload["inputs"] = workflow_inputs
+        workflow_inputs = {
+            **self.settings.github_start_workflow_inputs,
+            "backend_url": backend_url,
+            "backend_ws_url": backend_ws_url,
+        }
 
-        payload: dict[str, object] = {
+        print(f"Workflow inputs before dispatch: {workflow_inputs, backend_url, backend_ws_url}")
+
+        payload = {
             "ref": self.settings.github_ref,
-            "inputs": workflow_inputs
+            "inputs": workflow_inputs,
         }
 
         print(f"Dispatching GitHub Actions workflow with inputs: {workflow_inputs}")
