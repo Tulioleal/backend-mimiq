@@ -104,4 +104,6 @@ class AudioHealthAnalyzer:
             recommendations=recommendations,
         )
 
+        print(f"Audio health analysis result: {res}")  # Debug log of the analysis result
+
         return res

@@ -36,11 +36,13 @@ async def analyze_voice(
     session: AsyncSession = Depends(get_db_session),
 ) -> VoiceCandidateAnalyzeResponse:
     audio_bytes, report = await request.app.state.services.audio_health.analyze_upload(audio)
+    print(f"Audio health report: {report}")
     gcs_path = await request.app.state.services.storage.upload_sample(
         audio_bytes,
         audio.content_type,
         audio.filename,
     )
+    print(f"Uploaded audio to GCS path: {gcs_path}")
     candidate = await request.app.state.services.voice_candidates.create_candidate(
         session,
         name=name,
@@ -48,6 +50,7 @@ async def analyze_voice(
         gcs_path=gcs_path,
         health_report=report,
     )
+    print(f"Created voice candidate with ID: {candidate.id}")
     return VoiceCandidateAnalyzeResponse.model_validate({
         **report.model_dump(mode="json"),
         "candidate": VoiceCandidateRead.model_validate(candidate).model_dump(mode="json"),
