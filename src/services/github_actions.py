@@ -1,4 +1,5 @@
 from __future__ import annotations
+import os
 
 from httpx import AsyncClient, HTTPStatusError
 
@@ -41,7 +42,14 @@ class GitHubActionsService:
         inputs["backend_url"] = backend_url
         inputs["backend_ws_url"] = backend_ws_url
 
-        print(f"Dispatching GitHub Actions workflow with inputs: {inputs}")
+        container_env = {
+            "BACKEND_URL": os.environ["BACKEND_URL"],
+            "BACKEND_WS_URL": os.environ["BACKEND_WS_URL"],
+            "INTERNAL_SECRET": os.environ["INTERNAL_SECRET"],
+            "VAST_API_KEY": os.environ["VAST_API_KEY"],
+        }
+
+        print(f"Dispatching GitHub Actions workflow with inputs: {inputs, container_env}")
 
         payload: dict[str, object] = {
             "ref": self.settings.github_ref,
