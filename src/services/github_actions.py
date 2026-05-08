@@ -35,7 +35,7 @@ class GitHubActionsService:
                 "BACKEND_PUBLIC_URL must be set to dispatch the GitHub Actions workflow."
             )
 
-        backend_url = self.settings.backend_public_url
+        backend_url = self.settings.backend_url
         backend_ws_url = self.settings.backend_ws_url
         inputs = self.settings.github_start_workflow_inputs
         inputs["backend_url"] = backend_url
