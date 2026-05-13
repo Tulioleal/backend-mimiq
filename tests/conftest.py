@@ -77,6 +77,15 @@ class FakeGPUOrchestrator:
         self.detail = "No active GPU instance."
         self.startup_dispatches = 0
 
+    def set_session_maker(self, session_maker) -> None:
+        del session_maker
+
+    async def mark_worker_busy(self) -> None:
+        pass
+
+    async def mark_worker_idle(self) -> None:
+        pass
+
     async def get_status(self, session=None) -> GPUStatusRead:
         del session
         return GPUStatusRead(
@@ -142,6 +151,10 @@ class FakeTTSProxyService:
         )
 
 
+class FakeRunPodService:
+    pass
+
+
 def build_test_services(settings: Settings, http_client: AsyncClient) -> AppServices:
     del http_client
     storage = FakeStorageService()
@@ -159,6 +172,7 @@ def build_test_services(settings: Settings, http_client: AsyncClient) -> AppServ
         generations=GenerationService(),
         tts_proxy=FakeTTSProxyService(gpu),
         tts_worker=tts_worker,
+        runpod=FakeRunPodService(),
     )
 
 

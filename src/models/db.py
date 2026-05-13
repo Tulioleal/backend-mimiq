@@ -91,6 +91,7 @@ class TTSRuntimeState(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     instance_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    provider_instance_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     endpoint: Mapped[str | None] = mapped_column(String(1024), nullable=True)
     status: Mapped[str] = mapped_column(String(32), nullable=False)
     registered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

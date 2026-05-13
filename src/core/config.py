@@ -60,7 +60,27 @@ class Settings(BaseSettings):
         alias="GITHUB_START_WORKFLOW_INPUTS_JSON",
     )
 
+    tts_provider: str = Field(default="runpod", alias="TTS_PROVIDER")
     tts_boot_timeout_seconds: int = Field(default=600, alias="TTS_BOOT_TIMEOUT_SECONDS")
+    tts_idle_timeout_seconds: int = Field(default=1800, alias="TTS_IDLE_TIMEOUT_SECONDS")
+
+    runpod_api_key: str | None = Field(default=None, alias="RUNPOD_API_KEY")
+    runpod_api_url: str = Field(default="https://rest.runpod.io/v1", alias="RUNPOD_API_URL")
+    runpod_pod_name: str = Field(default="pvc-xtts", alias="RUNPOD_POD_NAME")
+    runpod_image_name: str | None = Field(default=None, alias="RUNPOD_IMAGE_NAME")
+    runpod_gpu_type_ids_raw: str = Field(
+        default="NVIDIA RTX 4090,NVIDIA RTX 3090,NVIDIA RTX A5000,NVIDIA A40",
+        alias="RUNPOD_GPU_TYPE_IDS",
+    )
+    runpod_gpu_type_priority: str = Field(default="availability", alias="RUNPOD_GPU_TYPE_PRIORITY")
+    runpod_min_ram_per_gpu: int = Field(default=16, alias="RUNPOD_MIN_RAM_PER_GPU")
+    runpod_min_vcpu_per_gpu: int = Field(default=4, alias="RUNPOD_MIN_VCPU_PER_GPU")
+    runpod_volume_gb: int = Field(default=40, alias="RUNPOD_VOLUME_GB")
+    runpod_container_disk_gb: int = Field(default=50, alias="RUNPOD_CONTAINER_DISK_GB")
+    runpod_ports_raw: str = Field(default="8000/http", alias="RUNPOD_PORTS")
+    runpod_interruptible: bool = Field(default=True, alias="RUNPOD_INTERRUPTIBLE")
+    runpod_start_retry_seconds: int = Field(default=300, alias="RUNPOD_START_RETRY_SECONDS")
+    runpod_shutdown_action: str = Field(default="delete", alias="RUNPOD_SHUTDOWN_ACTION")
 
     backend_public_url: str | None = Field(default=None, alias="BACKEND_PUBLIC_URL")
     internal_secret: str | None = Field(default=None, alias="INTERNAL_SECRET")
@@ -84,6 +104,14 @@ class Settings(BaseSettings):
         if not isinstance(parsed, dict):
             raise ValueError("GITHUB_START_WORKFLOW_INPUTS_JSON must be a JSON object")
         return {str(key): str(value) for key, value in parsed.items()}
+
+    @property
+    def runpod_gpu_type_ids(self) -> list[str]:
+        return [value.strip() for value in self.runpod_gpu_type_ids_raw.split(",") if value.strip()]
+
+    @property
+    def runpod_ports(self) -> list[str]:
+        return [value.strip() for value in self.runpod_ports_raw.split(",") if value.strip()]
 
 
 @lru_cache

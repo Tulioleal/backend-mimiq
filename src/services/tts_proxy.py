@@ -68,7 +68,11 @@ class TTSProxyService:
             language=payload.language,
             slider_config=payload.slider_config.model_dump(),
         )
-        result = await result_future
+        await self.gpu.mark_worker_busy()
+        try:
+            result = await result_future
+        finally:
+            await self.gpu.mark_worker_idle()
 
         await websocket.send_json(
             CompletedMessage(

@@ -24,6 +24,7 @@ async def lifespan(app: FastAPI):
     app.state.db = database
     app.state.http_client = http_client
     app.state.services = app.state.services_factory(settings, http_client)
+    app.state.services.gpu.set_session_maker(database.session_maker)
 
     try:
         yield

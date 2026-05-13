@@ -68,14 +68,28 @@ class TTSRuntimeStateService:
         instance_id: str | None,
         endpoint: str | None,
         detail: str | None,
+        provider_instance_id: str | None = None,
         registered_at: datetime | None = None,
     ) -> TTSRuntimeState:
         state = await self._get_or_create(session)
         state.status = status.value
         state.instance_id = instance_id
+        state.provider_instance_id = provider_instance_id
         state.endpoint = endpoint
         state.last_error = detail
         state.registered_at = registered_at
+        state.updated_at = self._now()
+        await session.commit()
+        await session.refresh(state)
+        return state
+
+    async def set_provider_instance_id(
+        self,
+        session: AsyncSession,
+        provider_instance_id: str | None,
+    ) -> TTSRuntimeState:
+        state = await self._get_or_create(session)
+        state.provider_instance_id = provider_instance_id
         state.updated_at = self._now()
         await session.commit()
         await session.refresh(state)

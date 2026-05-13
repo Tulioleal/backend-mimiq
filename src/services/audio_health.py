@@ -56,14 +56,14 @@ class AudioHealthAnalyzer:
         issues: list[AudioHealthIssue] = []
         recommendations: list[str] = []
 
-        # if duration_seconds < 60:
-        #     issues.append(
-        #         AudioHealthIssue(
-        #             code="duration_too_short",
-        #             message="Voice sample must be at least 60 seconds long.",
-        #         )
-        #     )
-        #     recommendations.append("Record at least 60 seconds of continuous speech.")
+        if duration_seconds < 60:
+            issues.append(
+                AudioHealthIssue(
+                    code="duration_too_short",
+                    message="Voice sample must be at least 60 seconds long.",
+                )
+            )
+            recommendations.append("Record at least 60 seconds of continuous speech.")
 
         # if average_db < -32 or peak < 0.15:
         #     issues.append(

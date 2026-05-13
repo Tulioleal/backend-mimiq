@@ -30,7 +30,10 @@ async def tts_worker_ws(
     _: str = Depends(require_internal_key_websocket),
 ) -> None:
     await websocket.accept()
-    instance_id = websocket.query_params.get("instance_id")
+    instance_id = (
+        websocket.headers.get("x-instance-id")
+        or websocket.query_params.get("instance_id")
+    )
     session_maker = websocket.app.state.db.session_maker
     async with session_maker() as session:
         await websocket.app.state.services.tts_worker.connect(websocket)

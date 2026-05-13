@@ -5,7 +5,7 @@ PVC (Private Voice Clone) is a self-hosted voice cloning platform built around X
 The project is split into three main parts:
 
 - `backend/`: FastAPI API layer on GCP for auth, voice storage, audio health checks, LLM preprocessing, and TTS worker coordination
-- `xtts-vm/`: XTTS service that runs on Vast.ai and connects back to the backend as a worker
+- `xtts-vm/`: XTTS service image that runs on a RunPod pod and connects back as a worker
 - `infra/`: OpenTofu configuration for the GCP backend VM, Cloud SQL, networking, and storage buckets
 
 ## Architecture
@@ -14,8 +14,8 @@ The runtime flow is:
 
 1. The frontend sends a generation request to `backend/`
 2. The backend validates the session and rewrites the text through the configured LLM API
-3. If the TTS service is offline, the backend dispatches the `xtts-vm` GitHub Actions startup workflow
-4. GitHub Actions boots the Vast.ai instance and starts the XTTS service
+3. If the TTS service is offline, the backend creates or reuses a RunPod pod through the RunPod REST API
+4. RunPod starts the XTTS container from the configured image
 5. The XTTS service connects to the backend worker WebSocket
 6. The backend sends synthesize jobs over that socket and proxies streamed audio chunks back to the client
 7. The XTTS service uploads the completed WAV back to the backend
@@ -39,8 +39,7 @@ You will need:
 - Python 3.11+ for `backend/`
 - OpenTofu for `infra/`
 - A GCP project with Cloud SQL and GCS access
-- A GitHub repository with Actions enabled for `xtts-vm/`
-- A Vast.ai account and API key for `xtts-vm/`
+- A RunPod API key for GPU pod lifecycle management
 - A Docker Hub account if you plan to publish the XTTS image from GitHub Actions
 - An LLM API endpoint for text preprocessing
 
@@ -50,8 +49,8 @@ Recommended order:
 
 1. Configure GCP infrastructure in `infra/`
 2. Configure and run the FastAPI backend in `backend/`
-3. Configure `xtts-vm/` GitHub Actions secrets and build the XTTS image
-4. Point the backend at the GitHub workflow used to start the XTTS service
+3. Build and publish the XTTS image
+4. Point the backend at the image and RunPod API credentials used to start the XTTS service
 5. Trigger generation and verify the XTTS service connects back to the backend worker WebSocket
 
 ## 1. Infrastructure Setup
@@ -106,11 +105,15 @@ Important backend settings:
 - `LLM_API_URL`: text rewrite endpoint
 - `INTERNAL_SECRET`: shared secret used by `xtts-vm` when connecting to backend internal endpoints
 - `BACKEND_PUBLIC_URL`: public URL the XTTS service can call back into
-- `GITHUB_TOKEN`: token used by backend to dispatch the XTTS startup workflow
-- `GITHUB_OWNER`: owner of the `xtts-vm` repository
-- `GITHUB_REPO`: repository name containing the workflow
-- `GITHUB_START_WORKFLOW`: workflow filename, for example `start-tts.yml`
-- `GITHUB_REF`: branch or tag to dispatch
+- `TTS_PROVIDER`: set to `runpod`
+- `RUNPOD_API_KEY`: RunPod REST API key used only by the backend
+- `RUNPOD_IMAGE_NAME`: XTTS worker image to run, for example `<dockerhub-user>/pvc-tts:latest`
+- `RUNPOD_GPU_TYPE_IDS`: comma-separated RunPod GPU type preference list
+- `RUNPOD_GPU_TYPE_PRIORITY`: usually `availability`
+- `RUNPOD_SHUTDOWN_ACTION`: set to `delete` to remove idle pods
+- `TTS_IDLE_TIMEOUT_SECONDS`: idle time before backend deletes the pod
+- `BACKEND_URL`: public HTTP URL the XTTS worker can call back into
+- `BACKEND_WS_URL`: public worker WebSocket URL, for example `wss://api.example.com/internal/tts-worker/ws`
 
 ### Install
 
@@ -162,23 +165,22 @@ pytest
 
 ## 3. XTTS Service Setup
 
-The XTTS service runs on Vast.ai and is controlled through GitHub Actions in `xtts-vm/`.
+The XTTS service runs as a provider-neutral worker container. The backend creates a RunPod pod and passes only callback settings and worker identity into the container.
 
 See `xtts-vm/README.md` for the detailed service-specific setup.
 
 At a minimum:
 
-1. Configure GitHub Actions secrets in the `xtts-vm` repository
-2. Build and publish the Docker image
-3. Ensure these secrets are present:
+1. Build and publish the Docker image
+2. Configure backend RunPod settings
+3. Ensure these values are available to the worker from the backend-created pod environment:
 
-- `VAST_API_KEY`
-- `DOCKERHUB_USERNAME`
-- `DOCKERHUB_TOKEN`
 - `BACKEND_URL`
+- `BACKEND_WS_URL`
 - `INTERNAL_SECRET`
+- `TTS_INSTANCE_ID`
 
-The startup workflow should boot the Vast.ai instance, start the XTTS service, and let the XTTS service:
+The XTTS service should:
 
 - connect to `WS /internal/tts-worker/ws` when it is available
 - fetch `GET /internal/jobs/{job_id}/speaker.wav` for each synthesize job
@@ -193,13 +195,13 @@ Once infrastructure and secrets are configured:
 2. Authenticate with `X_ADMIN_KEY`
 3. Upload a voice sample
 4. Send a generation request through the backend WebSocket
-5. Backend dispatches the GitHub Actions startup workflow if compute is offline
+5. Backend creates a RunPod pod if compute is offline
 6. Wait for `booting` to transition to `ready`
 7. Retry generation once the XTTS worker has connected
 
 ## Notes
 
-- The backend does not talk to Vast.ai directly.
-- `xtts-vm/` is the only component that should own Vast.ai lifecycle logic.
+- The backend owns RunPod pod create/delete lifecycle through the REST API.
+- `RUNPOD_API_KEY` must not be passed into the XTTS worker container.
 - The backend remains responsible for auth, persistence, GCS operations, LLM preprocessing, and proxying the TTS stream.
 - The PRD for the system lives in `PRD.md`.

@@ -11,6 +11,7 @@ from services.generation_service import GenerationService
 from services.github_actions import GitHubActionsService
 from services.gpu import GPUOrchestrator
 from services.llm import LLMPreprocessor
+from services.runpod import RunPodService
 from services.storage import StorageService
 from services.tts_runtime_state import TTSRuntimeStateService
 from services.tts_proxy import TTSProxyService
@@ -31,6 +32,7 @@ class AppServices:
     generations: GenerationService
     tts_proxy: TTSProxyService
     tts_worker: TTSWorkerService
+    runpod: RunPodService
 
 
 def build_services(settings: Settings, http_client: AsyncClient) -> AppServices:
@@ -38,8 +40,9 @@ def build_services(settings: Settings, http_client: AsyncClient) -> AppServices:
     storage = StorageService(settings)
     llm = LLMPreprocessor(settings, http_client)
     github_actions = GitHubActionsService(settings, http_client)
+    runpod = RunPodService(settings, http_client)
     tts_runtime_state = TTSRuntimeStateService()
-    gpu = GPUOrchestrator(settings, http_client, tts_runtime_state, github_actions)
+    gpu = GPUOrchestrator(settings, http_client, tts_runtime_state, github_actions, runpod)
     voices = VoiceService()
     voice_candidates = VoiceCandidateService()
     generations = GenerationService()
@@ -56,4 +59,5 @@ def build_services(settings: Settings, http_client: AsyncClient) -> AppServices:
         generations=generations,
         tts_proxy=TTSProxyService(settings, llm, storage, gpu, tts_worker, voices, generations),
         tts_worker=tts_worker,
+        runpod=runpod,
     )

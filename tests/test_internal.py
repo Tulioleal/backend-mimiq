@@ -26,6 +26,21 @@ def test_internal_worker_ws_requires_internal_key(client) -> None:
         assert exc.code == 1008
 
 
+def test_internal_worker_ws_reads_instance_id_header(client) -> None:
+    with client.websocket_connect(
+        "/internal/tts-worker/ws?instance_id=query-id",
+        headers={"X-Internal-Key": "internal-test-secret", "X-Instance-ID": "header-id"},
+    ):
+        status_response = client.get(
+            "/api/status/gpu",
+            headers={"X-Admin-Key": "test-admin-key"},
+        )
+
+        assert status_response.status_code == 200
+        assert status_response.json()["status"] == "ready"
+        assert status_response.json()["instance_id"] == "header-id"
+
+
 def test_internal_worker_disconnect_marks_gpu_as_offline(client) -> None:
     with client.websocket_connect(
         "/internal/tts-worker/ws?instance_id=vast-123",
