@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import time
 from dataclasses import dataclass
 
@@ -8,6 +9,9 @@ from httpx import AsyncClient, HTTPStatusError, Response
 
 from core.config import Settings
 from core.exceptions import ConfigurationError
+
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(slots=True)
@@ -27,13 +31,18 @@ class RunPodService:
         return bool(self.settings.runpod_api_key and self.settings.runpod_image_name)
 
     async def create_pod(self, worker_instance_id: str) -> dict[str, object]:
+        payload = self._create_pod_payload(worker_instance_id)
         response = await self.http_client.post(
             f"{self._base_url}/pods",
             headers=self._headers,
-            json=self._create_pod_payload(worker_instance_id),
+            json=payload,
             timeout=30.0,
         )
-        self._raise_for_status(response)
+        try:
+            self._raise_for_status(response)
+        except RuntimeError:
+            logger.error("RunPod pod create failed with payload: %s", self._sanitized_create_pod_payload(payload))
+            raise
         return response.json()
 
     async def get_pod(self, pod_id: str) -> dict[str, object]:
@@ -160,10 +169,15 @@ class RunPodService:
         if not isinstance(exc, RuntimeError):
             return False
         message = str(exc).lower()
+        if "runpod api request failed (400)" in message:
+            return False
         return any(
             value in message
             for value in ["409", "429", "500", "502", "503", "504", "availability", "available"]
         )
+
+    def _sanitized_create_pod_payload(self, payload: dict[str, object]) -> dict[str, object]:
+        return {key: value for key, value in payload.items() if key != "env"}
 
     def _pod_is_terminated(self, pod: dict[str, object]) -> bool:
         status = str(pod.get("status") or pod.get("desiredStatus") or "").upper()

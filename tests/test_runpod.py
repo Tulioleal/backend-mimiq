@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 
 import httpx
+import pytest
 
 from core.config import Settings
 from services.runpod import RunPodService
@@ -106,6 +107,37 @@ def test_create_pod_retries_transient_availability_errors(monkeypatch) -> None:
         assert pod.pod_id == "pod-123"
         assert [request[0] for request in client.requests] == ["GET", "POST", "POST"]
         assert sleep_calls
+
+    asyncio.run(run())
+
+
+def test_create_pod_does_not_retry_bad_request_schema_errors(monkeypatch) -> None:
+    async def run() -> None:
+        sleep_calls = []
+
+        async def fake_sleep(delay):
+            sleep_calls.append(delay)
+
+        monkeypatch.setattr("services.runpod.asyncio.sleep", fake_sleep)
+        client = FakeHTTPClient(
+            [
+                response(200, []),
+                response(
+                    400,
+                    {
+                        "error": "The request body does not meet schema requirements",
+                        "problems": ["value must be one of the available GPU types"],
+                    },
+                ),
+            ]
+        )
+        service = RunPodService(build_settings(), client)
+
+        with pytest.raises(RuntimeError, match="RunPod API request failed \\(400\\)"):
+            await service.ensure_worker_pod_started(worker_instance_id="worker-123")
+
+        assert [request[0] for request in client.requests] == ["GET", "POST"]
+        assert sleep_calls == []
 
     asyncio.run(run())
 
