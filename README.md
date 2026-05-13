@@ -115,6 +115,21 @@ Important backend settings:
 - `BACKEND_URL`: public HTTP URL the XTTS worker can call back into
 - `BACKEND_WS_URL`: public worker WebSocket URL, for example `wss://api.example.com/internal/tts-worker/ws`
 
+`BACKEND_URL` and `BACKEND_WS_URL` must be reachable from RunPod over the public internet. Prefer a public HTTPS domain, for example:
+
+```env
+BACKEND_URL=https://api.example.com
+BACKEND_WS_URL=wss://api.example.com/internal/tts-worker/ws
+```
+
+If using a raw VM IP and service port, verify the port is externally reachable before starting RunPod pods:
+
+```bash
+curl --connect-timeout 5 http://<backend-public-ip>:8000/health
+```
+
+Raw IP access also requires the backend process/container to bind to `0.0.0.0`, the host to publish the service port, and the cloud firewall to allow inbound TCP traffic on that port. Internal routes remain protected by `X-Internal-Key`; do not expose `RUNPOD_API_KEY` to the worker.
+
 ### Install
 
 ```bash

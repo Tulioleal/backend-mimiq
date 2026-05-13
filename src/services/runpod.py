@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import asyncio
+import ipaddress
 import logging
 import time
 from dataclasses import dataclass
+from urllib.parse import urlparse
 
 from httpx import AsyncClient, HTTPStatusError, Response
 
@@ -157,7 +159,21 @@ class RunPodService:
         if not self.settings.internal_secret:
             missing.append("INTERNAL_SECRET")
         if missing:
-            raise ConfigurationError(f"Missing RunPod worker environment settings: {', '.join(missing)}")
+            raise ConfigurationError(
+                "Missing RunPod worker environment settings: "
+                f"{', '.join(missing)}. BACKEND_URL and BACKEND_WS_URL must be reachable from RunPod."
+            )
+
+        local_urls = []
+        if self._uses_local_callback_host(self._backend_url):
+            local_urls.append("BACKEND_URL")
+        if self._uses_local_callback_host(self.settings.backend_ws_url):
+            local_urls.append("BACKEND_WS_URL")
+        if local_urls:
+            raise ConfigurationError(
+                "RunPod worker callback URLs must be reachable from RunPod/public internet; "
+                f"do not use localhost or private network hosts for: {', '.join(local_urls)}"
+            )
 
     def _raise_for_status(self, response: Response) -> None:
         try:
@@ -178,6 +194,20 @@ class RunPodService:
 
     def _sanitized_create_pod_payload(self, payload: dict[str, object]) -> dict[str, object]:
         return {key: value for key, value in payload.items() if key != "env"}
+
+    def _uses_local_callback_host(self, value: str | None) -> bool:
+        if not value:
+            return False
+        host = urlparse(value).hostname
+        if not host:
+            return False
+        if host == "localhost" or host.endswith(".localhost"):
+            return True
+        try:
+            address = ipaddress.ip_address(host)
+        except ValueError:
+            return False
+        return address.is_private or address.is_loopback or address.is_link_local
 
     def _pod_is_terminated(self, pod: dict[str, object]) -> bool:
         status = str(pod.get("status") or pod.get("desiredStatus") or "").upper()
