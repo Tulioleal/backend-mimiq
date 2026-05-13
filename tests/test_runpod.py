@@ -62,8 +62,8 @@ def test_create_pod_sends_auth_header_and_provider_neutral_payload() -> None:
         assert kwargs["headers"] == {"Authorization": "Bearer runpod-test-key"}
         assert payload["imageName"] == "repo/pvc-tts:latest"
         assert payload["gpuTypeIds"] == [
-            "NVIDIA RTX 4090",
-            "NVIDIA RTX 3090",
+            "NVIDIA GeForce RTX 4090",
+            "NVIDIA GeForce RTX 3090",
             "NVIDIA RTX A5000",
             "NVIDIA A40",
         ]

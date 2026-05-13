@@ -69,7 +69,7 @@ class Settings(BaseSettings):
     runpod_pod_name: str = Field(default="pvc-xtts", alias="RUNPOD_POD_NAME")
     runpod_image_name: str | None = Field(default=None, alias="RUNPOD_IMAGE_NAME")
     runpod_gpu_type_ids_raw: str = Field(
-        default="NVIDIA RTX 4090,NVIDIA RTX 3090,NVIDIA RTX A5000,NVIDIA A40",
+        default="NVIDIA GeForce RTX 4090,NVIDIA GeForce RTX 3090,NVIDIA RTX A5000,NVIDIA A40",
         alias="RUNPOD_GPU_TYPE_IDS",
     )
     runpod_gpu_type_priority: str = Field(default="availability", alias="RUNPOD_GPU_TYPE_PRIORITY")
